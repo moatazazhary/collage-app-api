@@ -1,0 +1,289 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Role {
+  id String @id @unique @default(uuid())
+  name String @unique
+  users UsersRole[]
+}
+model UsersRole{
+  userId String 
+  roleId String
+  user User @relation(fields: [userId],references: [id])
+  role Role @relation(fields: [roleId],references: [id])
+  @@id([userId,roleId])
+}
+model Department {
+  id String @id @default(uuid())
+  title String
+  createdAt DateTime @default(now())
+  doctors Doctor[]
+  students Student[]
+  courses Course[]
+  exams Exam[]
+  researches Research[]
+}
+
+model Semester {
+  id String @id @default(uuid())
+  title String
+  semesterNum Int @unique
+  createdAt DateTime @default(now())
+
+  students Student[]
+  courses Course[]
+  exams Exam[]
+}
+
+model User{
+  id String @id @default(uuid())
+  fullname String
+  email String? @unique
+  password String? @default("")
+  isChangePassword Boolean @default(false)
+  otp String?
+  otpExpire DateTime?
+  otpLimit Int @default(0)
+  address String
+  phone String?
+  facultyName String @default("كلية الإقتصاد والعلوم الإدارية")
+  createdAt DateTime @default(now())
+  lastUpdatedAt DateTime @updatedAt
+  roles UsersRole[]
+
+  doctor Doctor?
+  student Student?
+  courses DoctorCourse[]
+  lectures Lecture[]
+  files File[]
+  materials CourseMaterial[]
+  exams Exam[]
+  researchs ResearchParticipant[]
+  uploadedResearchs Research[]
+  degreeRequests DegreeRequest[]
+}
+
+model Doctor {
+  id String @id @default(uuid())
+  userId String @unique
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+  officeNum Int?
+  title String
+  departmentId String
+  department Department @relation(fields: [departmentId],references: [id],onDelete: Cascade)
+}
+
+model Student {
+  id String @id @default(uuid())
+  facultyNum String @unique
+  graduationYear Int?
+  userId String @unique
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+  departmentId String 
+  department Department @relation(fields: [departmentId],references: [id],onDelete: Cascade)
+  semesterNum Int 
+  semester Semester @relation(fields: [semesterNum],references: [semesterNum],onDelete: Cascade)
+}
+
+
+model Course {
+  id String @id @default(uuid())
+  name String 
+  description String?
+  createdAt DateTime @default(now())
+  lastUpdatedAt DateTime @updatedAt
+
+  departmentId String
+  department Department @relation(fields: [departmentId],references: [id])
+  semesterNum Int
+  semester Semester @relation(fields: [semesterNum],references: [semesterNum])
+  
+  doctors DoctorCourse[]
+  lectures Lecture[]
+  materials CourseMaterial[]
+  exams Exam[]
+}
+
+model DoctorCourse {
+  @@id([userId,courseId])
+  userId String 
+  courseId String
+  user User @relation(fields: [userId],references: [id])
+  course Course @relation(fields: [courseId],references: [id])
+
+  isCurrent Boolean @default(false)
+}
+
+
+model Lecture {
+  id String @id @unique @default(uuid())
+  title String 
+  createdAt DateTime @default(now())
+  lastUpdatedAt DateTime @updatedAt
+
+  courseId String
+  CreatedById String
+  course Course @relation(fields: [courseId],references: [id])
+  user User @relation(fields: [CreatedById],references: [id])
+  materials CourseMaterial[]
+
+}
+
+model File {
+  id String @id @unique @default(uuid())
+  originalName String
+  fileName String
+  size Int
+  path String
+  type String //إمتحان - ملخص - بحث - محاضرة - المادة كاملة
+  extension String
+  createdAt DateTime @default(now())
+
+  uploadedById String
+  user User @relation(fields: [uploadedById],references: [id])
+
+  material CourseMaterial?
+  exams Exam?
+  research Research?
+}
+
+model CourseMaterial {
+  id String @id @unique @default(uuid())
+  courseId String
+  lectureId String?
+  uploadedById String
+  fileId String @unique
+  status String
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId],references: [id])
+  lecture Lecture? @relation(fields: [lectureId],references: [id])
+  user User @relation(fields: [uploadedById],references: [id])
+  file File @relation(fields: [fileId],references: [id])
+}
+
+model Exam{
+  id String @id @unique @default(uuid())
+  title String
+  year Int
+  status String
+
+  departmentId String
+  semesterNum Int
+  courseId String
+  fileId String? @unique
+  uploadedById String
+
+  department Department @relation(fields: [departmentId],references: [id])
+  semester Semester @relation(fields: [semesterNum],references: [semesterNum])
+  course Course @relation(fields: [courseId],references: [id])
+  file File? @relation(fields: [fileId],references: [id])
+  user User @relation(fields: [uploadedById],references: [id])
+}
+
+model Research{
+  id String @id @unique @default(uuid())
+  title String
+  year Int
+  abstract String
+  type String
+
+  status String @default("قيد الإنتظار")
+  createdAt DateTime @default(now())
+
+  departmentId String
+  department Department @relation(fields: [departmentId],references: [id])
+  createdById String
+  fileId String @unique
+  user User @relation(fields: [createdById],references: [id])
+  file File @relation(fields: [fileId],references: [id])
+
+  participants ResearchParticipant[]
+}
+
+model ResearchParticipant{
+  userId String
+  researchId String
+  @@id([userId,researchId])
+
+  user User @relation(fields: [userId],references: [id])
+  research Research @relation(fields: [researchId],references: [id])
+  role String
+}
+
+
+model Bank{
+  id String @id @unique @default(uuid())
+  bankName String 
+  accountNumber Int
+  accountName String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  degreeTransactions DegreeRequest[]
+}
+
+// model Payment{
+//   id String @id @unique @default(uuid())
+//   userId String
+//   bankId String 
+//   amount Decimal
+//   receipUrl String
+//   transactionNum String?
+//   status String
+//   CreatedAt DateTime @default(now())
+
+//   user User @relation(fields: [userId],references: [id])
+//   bank Bank @relation(fields: [bankId],references: [id])
+
+//   degreeRequest DegreeRequest?
+// }
+
+model DegreeRequest{
+  id  String @id @unique @default(uuid())
+  degreeTypes DegreeRequestType[] 
+  fullnameEnglish String
+
+  personalPhoto String
+  personalPhoto2 String?
+  idCardPhoto String
+  notes String? 
+  status String @default("قيد الإنتظار")
+  createdAt DateTime @default(now())
+  paymentPhoto String
+
+  bankId String 
+  userId String
+  bank Bank @relation(fields: [bankId],references: [id])
+  user User @relation(fields: [userId],references: [id])
+}
+
+model DegreeType{
+  id String @id @default(uuid())
+  title String
+  price Decimal
+
+  degreeRequests DegreeRequestType[] 
+}
+
+model DegreeRequestType {
+  @@id([degreeRequestId,degreeTypeId])
+  degreeRequestId String
+  degreeTypeId String
+
+  degreeRequests DegreeRequest @relation(fields: [degreeRequestId],references: [id])
+  degreeTypes DegreeType @relation(fields: [degreeTypeId],references: [id])
+}
