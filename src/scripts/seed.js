@@ -102,7 +102,7 @@ async function seed (){
                             });
             user = await prisma.user.create({
                 data : {
-                    email:"admin@gmail.sa",
+                    email:"admin@gmail.com",
                     fullname : "المدير العام",
                     address : "وادي حلفا",
                     password : await bcrypt.hash("Admi@n123",10),
@@ -119,7 +119,7 @@ async function seed (){
                 });
 
                 console.log('✔️ Admin user created successfully \n')
-                console.log('   Email: admin@gmail.sa');
+                console.log('   Email: admin@gmail.com');
                 console.log('   Password: Admi@n123 \n');
             }
 

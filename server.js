@@ -17,6 +17,7 @@ const examRouts =  require('./src/modules/exams/examRouts')
 const coreRouts = require('./src/modules/core/coreRouts')
 const dashboardRouts = require('./src/modules/dashboard/dashboard.route')
 const cookieParser = require('cookie-parser')
+
 const cors = require('cors');
 
 
