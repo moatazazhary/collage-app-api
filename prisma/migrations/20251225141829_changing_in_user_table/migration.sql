@@ -1,7 +1,0 @@
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "isChangePassword" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "otp" TEXT,
-ADD COLUMN     "otpExpire" TIMESTAMP(3),
-ALTER COLUMN "email" DROP NOT NULL,
-ALTER COLUMN "password" DROP NOT NULL,
-ALTER COLUMN "password" SET DEFAULT '';
