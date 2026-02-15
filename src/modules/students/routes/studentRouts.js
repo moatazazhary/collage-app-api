@@ -215,7 +215,7 @@ router.get('/students',authenticateMiddleware,authorizationMiddleware(roles.ADMI
  *         description: خطأ في السيرفر
  */
 
-router.get('/students/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),getStudent)
+router.get('/students/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN,roles.STDUENT),getStudent)
 
 /**
  * @swagger

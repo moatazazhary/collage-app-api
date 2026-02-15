@@ -8,4 +8,9 @@ const DegreeSchema = z.object({
     userId : z.string('يجب ان يكون نصاً').min(1,'هذا الحقل مطلوب')
 });
 
-module.exports = {DegreeSchema}
+const requestNoteForm = z.object({
+    notes : z.string('هذا الحقل مطلوب').min(1,'هذا الحقل مطلوب').min(15,'لا يمكن أن يكون أقل من 15 حرف'),
+});
+
+
+module.exports = {DegreeSchema,requestNoteForm}

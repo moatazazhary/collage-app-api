@@ -3,7 +3,7 @@ const {authenticateMiddleware,authorizationMiddleware} = require('../../middlewa
 const {uploads} = require('../../middlewares/uploadsMiddleware')
 const {validate} = require('../../middlewares/validate')
 
-const {uploadFile,getAllowedTypes, approveMaterial} = require('./filesController')
+const {uploadFile,getAllowedTypes, approveMaterial, rejectMaterial, getAllFiles, getFile, searchFile, getUserFiles, getUserFileRequests} = require('./filesController')
 const {uploadSchema} = require('./filesValidation');
 const { roles } = require('../../utils/roles');
 const { uploadErrorHandler } = require('../../middlewares/uploadErrorsMiddleware');
@@ -85,7 +85,10 @@ router.post('/files',authenticateMiddleware,(req,res,next)=> uploads.single('fil
  *         description: خطأ في السيرفر
  */
 
-router.post('/files/approve-material',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),approveMaterial);
+router.post('/files/approve/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),approveMaterial);
+
+
+router.post('/files/reject/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),rejectMaterial);
 
 /**
  * @swagger
@@ -128,7 +131,12 @@ router.post('/files/approve-material',authenticateMiddleware,authorizationMiddle
 
 router.get('/files/file-types',authenticateMiddleware,getAllowedTypes);
 
+router.get('/files/',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),getAllFiles);
+router.get('/files/:id',authenticateMiddleware,getFile);
 
+router.get('/search/',authenticateMiddleware,authorizationMiddleware(roles.STDUENT,roles.DOCTOR),searchFile);
+router.get('/user-files/',authenticateMiddleware,authorizationMiddleware(roles.STDUENT,roles.DOCTOR),getUserFiles);
+router.get('/user-requests/',authenticateMiddleware,authorizationMiddleware(roles.STDUENT,roles.DOCTOR),getUserFileRequests);
 
 module.exports = router
 

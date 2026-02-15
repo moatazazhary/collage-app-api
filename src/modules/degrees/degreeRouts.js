@@ -2,8 +2,8 @@ const express = require('express');
 const {authenticateMiddleware,authorizationMiddleware} = require('../../middlewares/authMiddlewares')
 const {uploadDegreeRequirements} = require('../../middlewares/degreeUploadsMiddleware')
 const {validate} = require('../../middlewares/validate')
-const {requestDegree,approveRequest,rejectRequest,openRequest,getAllRequests,getDegreeRequest, degreeTypes, banks} = require('./degreeController')
-const {DegreeSchema} = require('./degreeValidation');
+const {requestDegree,approveRequest,rejectRequest,openRequest,getAllRequests,getDegreeRequest, degreeTypes, banks, getUserDegreeRequests} = require('./degreeController')
+const {DegreeSchema, requestNoteForm} = require('./degreeValidation');
 const { roles } = require('../../utils/roles');
 
 const router = express.Router();
@@ -16,6 +16,31 @@ const router = express.Router();
  */
 
 
+
+/**
+ * @swagger
+ * /degrees:
+ *   get:
+ *     summary: جلب جميع طلبات الشهادات
+ *     description: |
+ *       إرجاع قائمة بجميع طلبات الشهادات.
+ *       (صلاحية ADMIN فقط)
+ *     tags:
+ *       - Degrees
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: تم تحميل البيانات بنجاح
+ *       404:
+ *         description: لا توجد طلبات
+ *       500:
+ *         description: خطأ في السيرفر
+ */
+
+router.get('/degrees/',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),getAllRequests)
+
+router.get('/degrees/user-requests/',authenticateMiddleware,getUserDegreeRequests);
 
 /**
  * @swagger
@@ -104,7 +129,7 @@ router.post('/degrees/request',authenticateMiddleware,authorizationMiddleware(ro
  *         description: خطأ في السيرفر
  */
 
-router.post('/degrees/approve/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),approveRequest);
+router.post('/degrees/approve/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),validate(requestNoteForm),approveRequest);
 
 /**
  * @swagger
@@ -134,7 +159,7 @@ router.post('/degrees/approve/:id',authenticateMiddleware,authorizationMiddlewar
  *         description: خطأ في السيرفر
  */
 
-router.post('/degrees/reject/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),rejectRequest);
+router.post('/degrees/reject/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),validate(requestNoteForm),rejectRequest);
 /**
  * @swagger
  * /degrees/open/{id}:
@@ -165,28 +190,6 @@ router.post('/degrees/reject/:id',authenticateMiddleware,authorizationMiddleware
 
 router.post('/degrees/open/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),openRequest);
 
-/**
- * @swagger
- * /degrees:
- *   get:
- *     summary: جلب جميع طلبات الشهادات
- *     description: |
- *       إرجاع قائمة بجميع طلبات الشهادات.
- *       (صلاحية ADMIN فقط)
- *     tags:
- *       - Degrees
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: تم تحميل البيانات بنجاح
- *       404:
- *         description: لا توجد طلبات
- *       500:
- *         description: خطأ في السيرفر
- */
-
-router.get('/degrees/',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),getAllRequests)
 
 /**
  * @swagger
@@ -218,6 +221,8 @@ router.get('/degrees/:id',authenticateMiddleware,authorizationMiddleware(roles.A
 
 
 router.get('/degree-types',authenticateMiddleware,degreeTypes);
+
+
 router.get('/banks',authenticateMiddleware,banks);
 
 

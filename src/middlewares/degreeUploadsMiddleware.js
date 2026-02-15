@@ -1,5 +1,6 @@
 const multer = require('multer');
 const path = require('path');
+const { fileUploadError } = require('../errors/fileUploadErrors');
 
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR;
@@ -10,8 +11,14 @@ const storage = multer.diskStorage({
         cd(null,uploadFoler)
     },
     filename : (req,file,cd)=>{
+
+        const safeName =file.originalname
+            .toLowerCase()
+            .replace(/\s+/g, '-')    
+            .replace(/[^\w.-]/g, '');
+
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cd(null,uniqueSuffix + '-'+file.originalname)
+        cd(null,uniqueSuffix + '-'+safeName)
     }
 });
 
@@ -21,9 +28,9 @@ const fileFilter = (req,file,cd)=>{
     let maxSize = 4 * 1024 * 1024
 
     if(!allowedExtensions.includes(extension))
-        return cd(new Error('هذا النوع غير مسموح به'),false)
+        return cd(new fileUploadError('هذا النوع غير مسموح به',415),false)
     if(file.size > maxSize)
-        return cd(new Error(`يجب ان يكون حجم الملف في حدود ال ${maxSize / (1024 * 1024)}`))
+        return cd(new fileUploadError(`يجب ان يكون حجم الملف في حدود ال ${maxSize / (1024 * 1024)}`,400))
 
     cd(null,true);
 }

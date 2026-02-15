@@ -12,8 +12,7 @@ const createStudent = async (req,res)=>{
             data:{
                 fullname : studentInfo.fullname,
                 address : studentInfo.address,
-                phone : studentInfo.phone,
-                email : studentInfo.email,
+                phone : studentInfo.phone ? studentInfo.phone : '',
 
                 student :{
                     create : {
@@ -62,10 +61,11 @@ const createStudent = async (req,res)=>{
                 address : newStudent.address,
                 phone : newStudent.phone,
                 email : newStudent.email,
-                facultyNum : newStudent.student.facutlyNum,
-                semester : newStudent.student.semester,
-                department : newStudent.student.department,
-                userId : newStudent.id
+                facultyNum : newStudent.student.facultyNum,
+                semesterNum : newStudent.student.semester.semesterNum,
+                semester : newStudent.student.semester.title,
+                department : newStudent.student.department.title,
+                departmentId : newStudent.student.department.id,
             }
         });
 
@@ -89,12 +89,12 @@ const getAllStudents = async (req,res)=>{
 
         const students = await prisma.user.findMany({
             skip : pagenationOptions.skip,
-            take : pagenationOptions.skip,
+            take : pagenationOptions.limit,
             where:{
                 roles : {some:{role:{name:roles.STDUENT}}},
-                fullname : req.query.name ? req.query.name :'',
+                fullname : req.query.name ? req.query.name :{},
                 student : {
-                    facultyNum : req.query.facultyNum ? req.query.facultyNum : ''
+                    facultyNum : req.query.facultyNum ? req.query.facultyNum : {}
                 }
             },
             orderBy : {
@@ -107,7 +107,21 @@ const getAllStudents = async (req,res)=>{
         res.status(200).json({
             success : true,
             message : "تم تحميل البيانات بنجاح",
-            data : students,
+            data : students.map(student=>
+                ({
+                    id:student.student.id,
+                    fullname : student.fullname,
+                    address : student.address,
+                    phone : student.phone,
+                     userId:student.student.userId,
+                    email : student.email,
+                    facultyNum : student.student.facultyNum,
+                    semesterNum : student.student.semester.semesterNum,
+                    semester : student.student.semester.title,
+                    department : student.student.department.title,
+                    departmentId : student.student.department.id,
+                }
+            )),
             totalData : dataLenght,
             currentPage : pagenationOptions.page,
             totalPages : pagenationOptions.totalPages
@@ -124,11 +138,11 @@ const getAllStudents = async (req,res)=>{
 
 const getStudent = async (req,res)=>{
     try{
-        const student = await prisma.user.findUnique({where : {id:req.params.id},select:{
+        const student = await prisma.user.findUnique({where : {id:req.params.id},include:{
             student : {
-                select :{
-                    department : true,
-                    semester : true
+                include:{
+                    department:true,
+                    semester:true
                 }
             }
         }})
@@ -143,7 +157,19 @@ const getStudent = async (req,res)=>{
         res.status(200).json({
             success : true,
             message : "تم تحميل البيانات بنجاح",
-            data : student
+            data : {
+                    id:student.student.id,
+                    fullname : student.fullname,
+                    address : student.address,
+                    phone : student.phone,
+                    email : student.email,
+                    facultyNum : student.student.facultyNum,
+                    semesterNum : student.student.semester.semesterNum,
+                    semester : student.student.semester.title,
+                    department : student.student.department.title,
+                    departmentId : student.student.department.id,
+                    userId:student.student.userId
+                }
         });
 
     }catch(error){
@@ -159,10 +185,9 @@ const updateStudent = async (req,res)=>{
     try{
         const studentInfo = req.body
 
-        await findStudent(req.params.id);
-
+        const studentUser = await findStudent(req.params.id);
         const student = await prisma.user.update({
-            where :{id : req.params.id},
+            where :{id : studentUser.student.userId},
             data:{
                 fullname : studentInfo.fullname,
                 address : studentInfo.address,
@@ -205,10 +230,11 @@ const updateStudent = async (req,res)=>{
                 address : student.address,
                 phone : student.phone,
                 email : student.email,
-                facultyNum : student.student.facutlyNum,
-                semester : student.student.semester,
-                department : student.student.department,
-                userId : student.id
+                facultyNum : student.student.facultyNum,
+                semesterNum : student.student.semester.semesterNum,
+                semester : student.student.semester.title,
+                department : student.student.department.title,
+                departmentId : student.student.department.id,
             }
         });
 
@@ -306,7 +332,7 @@ const getStudentDegreeRequests = async (req,res)=>{
 
 
 async function findStudent (id){
-    const student = await prisma.user.findUnique({where :{id:id}});
+    const student = await prisma.user.findFirst({where :{student:{id:id}},include:{student:true}});
     if(!student){
         return res.status(404).json({
             success : false,

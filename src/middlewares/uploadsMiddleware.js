@@ -33,8 +33,13 @@ const storage = multer.diskStorage({
         cd(null,uploadFoler)
     },
     filename : (req,file,cd)=>{
+
+        const safeName =file.originalname
+            .toLowerCase()
+            .replace(/\s+/g, '-')    
+            .replace(/[^\w.-]/g, '');
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cd(null,uniqueSuffix + '-'+file.originalname)
+        cd(null,uniqueSuffix + '-'+safeName)
     }
 });
 

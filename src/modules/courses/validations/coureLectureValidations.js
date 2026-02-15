@@ -8,6 +8,7 @@ const createCourseSchema = z.object({
     doctorId : z.string().min(0),
     isDoctorCurrent : z.boolean()
 });
+
 const updateCourseSchema = z.object({
     name : z.string().min(1,{message : "اسم الكورس مطلوب"}),
     description : z.string().min(1,{message : " التفاصيل مطلوبة"}),

@@ -3,7 +3,7 @@ const {authenticateMiddleware,authorizationMiddleware} = require('../../../middl
 const {validate} = require('../../../middlewares/validate')
 const {roles} = require('../../../utils/roles')
 const {addDotorToCourseSchema,createCourseSchema,updateCourseSchema,createLectureSchema,updateLectureSchema} = require('../validations/coureLectureValidations');
-const {createCourse,getAllCuorses,getCourse,addDoctorToCourse,createLecture,getAllLectures,getLecture, updateCourse, deleteCourse, updateLecture, deleteLecture} = require('../courseLectureController');
+const {createCourse,getAllCuorses,getCourse,addDoctorToCourse,createLecture,getAllLectures,getLecture, updateCourse, deleteCourse, updateLecture, deleteLecture, getCoursesByDepartment, getUserCourses, getCourseDetails} = require('../courseLectureController');
 
 const router = express.Router();
 
@@ -141,6 +141,8 @@ router.post('/courses/add-doctor-to-course',authenticateMiddleware,authorization
 
 
 router.get('/courses',authenticateMiddleware,getAllCuorses);
+router.get('/courses-by-department',authenticateMiddleware,getCoursesByDepartment);
+router.get('/user-courses',authenticateMiddleware,authorizationMiddleware(roles.STDUENT),getUserCourses);
 
 /**
  * @swagger
@@ -169,6 +171,7 @@ router.get('/courses',authenticateMiddleware,getAllCuorses);
  */
 
 router.get('/courses/:id',authenticateMiddleware,getCourse);
+router.get('/courses/details/:id',authenticateMiddleware,getCourseDetails);
 
 /**
  * @swagger

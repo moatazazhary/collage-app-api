@@ -15,11 +15,11 @@ const fileRouts =  require('./src/modules/files/filesRouts')
 const degreeRouts=  require('./src/modules/degrees/degreeRouts')
 const examRouts =  require('./src/modules/exams/examRouts')
 const coreRouts = require('./src/modules/core/coreRouts')
+const dashboardRouts = require('./src/modules/dashboard/dashboard.route')
 const cookieParser = require('cookie-parser')
 const cors = require('cors');
 
 
-const main = require('./src/configs/seed')
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -50,7 +50,12 @@ app.use(cookieParser())
 
 app.use('/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerSpec));
 // Any static files
-app.use('/uploads',express.static(UPLOADS_DIR));
+app.use('/uploads',express.static(UPLOADS_DIR,{
+  setHeaders: (res, path) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'); 
+    res.setHeader('Content-Security-Policy',`frame-ancestors 'self' ${process.env.URL} `);
+    res.removeHeader('X-Frame-Options')
+  }}));
 
 SetUploadsPath();
 
@@ -64,19 +69,15 @@ app.use('/api',examRouts);
 app.use('/api',degreeRouts);
 app.use('/api',fileRouts);
 app.use('/api',coreRouts);
+app.use('/api',dashboardRouts);
 
-
-// Generate default data to database ones it running
-async function defaultDataGeneration(){
-    try{
-        await main();
-        console.log('seed run successfully')
-    }catch(error){
-        console.error('seed errors : '.error.message)
-    }
-}
-defaultDataGeneration();
 
 app.listen(PORT,()=>{
-    console.log(`Server now is running on port ${PORT}`)
+
+    console.log(`
+        🚀 Server is running!
+        📡 Port: ${PORT}
+        🌍 Environment: ${process.env.NODE_ENV || 'development'}
+        📝 API: http://localhost:${PORT}/api
+            `);
 })

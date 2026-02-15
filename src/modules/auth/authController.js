@@ -225,8 +225,9 @@ const sendOTP = async (req,res)=>{
     try{
         const userData = req.body
         let user;
+        console.log('ide : ',userData)
         if(userData.identifier){
-            const student = await prisma.student.findUnique({where :{facultyNum : identifier}})
+            const student = await prisma.student.findUnique({where :{facultyNum : userData.identifier}})
             if(!student){
                 res.status(404).json({
                     success : false,
@@ -354,7 +355,7 @@ const resetPassword = async (req,res)=>{
         });
 
         res.status(200).json({
-            success : false,
+            success : true,
             message : "تمت إعادة تعيين كلمة المرور بنجاح"
         });
 

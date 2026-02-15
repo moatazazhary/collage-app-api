@@ -65,7 +65,7 @@ const createDoctor = async (req,res)=>{
                 email : doctor.email,
                 officeNum : doctor.doctor.officeNum,
                 title : doctor.doctor.title,
-                department : doctor.doctor.department,
+                department : doctor.doctor.department.title,
                 userId : doctor.id
             }
         })
@@ -83,7 +83,8 @@ const createDoctor = async (req,res)=>{
 
 const getAllDoctors = async (req,res)=>{
     try{
-        const dataLenght = await prisma.doctor.count();
+        const dataLenght = await prisma.doctor.count()
+            
         const pagenationOptions = pagenation(req.query.page,req.query.limit,dataLenght,req.query.sort)
 
         const doctors = await prisma.user.findMany({
@@ -110,7 +111,18 @@ const getAllDoctors = async (req,res)=>{
         res.status(200).json({
             success : true,
             message : "تم تحميل البيانات بنجاح",
-            data : doctors,
+            data : doctors.map(doctor => ({
+                id:doctor.doctor?doctor.doctor.id :'' ,
+                fullname : doctor.fullname,
+                userId:doctor.doctor? doctor.doctor.userId :'',
+                address : doctor.address,
+                phone : doctor.phone,
+                email : doctor.email,
+                officeNum : doctor.doctor? doctor.doctor.officeNum : '',
+                title : doctor.doctor? doctor.doctor.title : '',
+                department :doctor.doctor? doctor.doctor.department.title : '',
+                departmentId:doctor.doctor? doctor.doctor.department.id : '',
+            })),
             totalData : dataLenght,
             currentPage : pagenationOptions.page,
             totalPages : pagenationOptions.totalPages
@@ -144,7 +156,18 @@ const getDoctor = async (req,res)=>{
         res.status(200).json({
             success : true,
             message : "تم تحميل البيانات بنجاح",
-            data : doctor
+            data : {
+                id:doctor.doctor.id,
+                fullname:doctor.fullname,
+                email:doctor.email,
+                title:doctor.doctor.title,
+                officeNum:doctor.doctor.officeNum,
+                address:doctor.address,
+                department:doctor.doctor.department.title,
+                departmentId:doctor.doctor.department.id,
+                phone:doctor.phone,
+                userId:doctor.doctor.userId
+            }
         });
 
     }catch(error){
@@ -160,10 +183,12 @@ const updateDoctor = async (req,res)=>{
     try{
         const doctorInfo = req.body
 
-        await findDoctor(req.params.id);
+        const doctorUser = await findDoctor(req.params.id,res);
 
         const doctor = await prisma.user.update({
-            where :{id : req.params.id},
+            where:{
+                id:doctorUser.doctor.userId
+            },
             data:{
                 fullname : doctorInfo.fullname,
                 address : doctorInfo.address,
@@ -171,12 +196,11 @@ const updateDoctor = async (req,res)=>{
                 email : doctorInfo.email,
 
                 doctor :{
-                    update : {
+                    update:{
                         title : doctorInfo.title,
                         officeNum : doctorInfo.officeNum,
                         departmentId : doctorInfo.departmentId,
                     }
-                    
                 }
             },
             include:{
@@ -201,14 +225,14 @@ const updateDoctor = async (req,res)=>{
             message : "تم تعديل الدكتور بنجاح",
             data : {
                 id:doctor.doctor.id,
-                fullname : doctor.fullname,
-                address : doctor.address,
-                phone : doctor.phone,
-                email : doctor.email,
-                officeNum : doctor.doctor.officeNum,
-                title : doctor.doctor.title,
-                department : doctor.doctor.department,
-                userId : doctor.id
+                fullname:doctor.fullname,
+                email:doctor.email,
+                title:doctor.doctor.title,
+                officeNum:doctor.doctor.officeNum,
+                address:doctor.address,
+                department:doctor.doctor.department.title,
+                departmentId:doctor.doctor.department.id,
+                phone:doctor.phone
             }
         });
 
@@ -226,7 +250,7 @@ const updateDoctor = async (req,res)=>{
 const deleteDoctor = async (req,res)=>{
     try{
 
-        const doctor =  await findStudent(req.params.id);
+        const doctor =  await findDoctor(req.params.id,res);
         await prisma.user.delete({where : {id : doctor.id}});
 
         res.status(200).json({
@@ -284,12 +308,12 @@ const createBulkDoctors = async (req,res)=>{
 
 
 
-async function findDoctor (id){
-    const doctor = await prisma.user.findUnique({where :{id:id}});
+async function findDoctor (id,res){
+    const doctor = await prisma.user.findFirst({where :{doctor:{id:id}},include:{doctor:true}});
     if(!doctor){
         return res.status(404).json({
             success : false,
-            message : "الطالب غير موجود"
+            message : "الدكتور غير موجود"
         });
     }
     return doctor;

@@ -2,8 +2,7 @@ const {prisma} = require('../../../configs/prisma');
 const {roles} = require('../../../utils/roles')
 const addMaterial = async (user, fileId, targetType,targetId)=>{
     if(targetType === "lecture" ){
-        const lecture = await prisma.lecture.findUnique({where : {id:targetId}, select : courseId});
-
+        const lecture = await prisma.lecture.findUnique({where : {id:targetId}, select : {courseId:true}});
         await prisma.courseMaterial.create({
             data : {
                 lectureId : targetId,

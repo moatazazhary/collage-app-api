@@ -1,4 +1,6 @@
+const path = require('path');
 const {prisma} = require('../../configs/prisma');
+const { pagenation } = require('../core/pagenationService');
 
 const requestDegree = async (req,res)=>{
     try{
@@ -9,7 +11,6 @@ const requestDegree = async (req,res)=>{
         const degreeTypes = await prisma.degreeType.findMany({where : {id : {in : requestData.degreeTypeIds}}});
 
         const bank = await prisma.bank.findUnique({where : {id : requestData.bankId}});
-
 
         if(degreeTypes.length == 0){
             res.status(400).json({
@@ -35,10 +36,14 @@ const requestDegree = async (req,res)=>{
         const degreeRequest = await prisma.degreeRequest.create({
             data : {
                 fullnameEnglish : requestData.fullnameEnglish,
-                personalPhoto : files['personalPhoto'][0].path ,
-                personalPhoto2 : files['personalPhoto2'] ? files['personalPhoto'][0].path : null ,
-                idCardPhoto : files['idCardPhoto'][0].path,
-                paymentPhoto : files['paymentPhoto'][0].path,
+                personalPhoto : path.relative(process.env.UPLOADS_DIR , files['personalPhoto'][0].path).replace('/\\/g',
+                    '/'),
+                personalPhoto2 : files['personalPhoto2'] ? path.relative(process.env.UPLOAD_DIR , files['personalPhoto2'][0].path).replace('/\\/g',
+                    '/') : null ,
+                idCardPhoto : path.relative(process.env.UPLOADS_DIR , files['idCardPhoto'][0].path).replace('/\\/g',
+                    '/'),
+                paymentPhoto : path.relative(process.env.UPLOADS_DIR , files['paymentPhoto'][0].path).replace('/\\/g',
+                    '/'),
                 bankId : requestData.bankId ,
                 userId : requestData.userId
             },
@@ -59,19 +64,18 @@ const requestDegree = async (req,res)=>{
             });
         }
 
-        await prisma.degreeRequestType.createMany({
-            data : [
-                degreeTypes.map(type=>({
-                    degreeRequestId :degreeRequest.id ,
+
+        const degreeType = await prisma.degreeRequestType.createMany({
+            data : degreeTypes.map(type=>({
+                    degreeRequestId :degreeRequest.id,
                     degreeTypeId :type.id 
-                }))
-            ]
+                }))        
         })
+
 
         res.status(201).json({
             success : true,
-            message : "تم التقديم بنجاح",
-            data : degreeRequest
+            message : "تم التقديم بنجاح"
         });
 
 
@@ -87,12 +91,77 @@ const requestDegree = async (req,res)=>{
 const getAllRequests = async (req,res)=>{
     try{
 
-        const degreeRequests = await prisma.degreeRequest.findMany({include : {user:{include : {student:true}},bank:true,degreeTypes:true}});
+
+        const dataLenght = await prisma.degreeRequest.count();
+        const pagenationOptions = pagenation(req.query.page,req.query.limit,dataLenght,req.query.sort)
+
+        const degreeRequests = await prisma.degreeRequest.findMany({
+            skip : pagenationOptions.skip,
+            take : pagenationOptions.limit,
+            orderBy : {
+                createdAt :pagenationOptions.sort
+            },
+            include : {user:{include : {student:true}},bank:true,degreeTypes:{
+                include:{
+                    degreeTypes:true
+                }
+            }}});
 
         res.status(200).json({
             success : true,
             message : "تم تحميل البيانات بنجاح",
-            data : degreeRequests
+            data : degreeRequests.map(request=>
+                ({
+                    id:request.id,
+                    fullnameEnglish:request.fullnameEnglish,
+                    fullnameArabic:request.user.fullname,
+                    personalPhoto:path.relative(process.env.UPLOADS_DIR , request.personalPhoto).replace('/\\/g',
+                    '/'),
+                    idCardPhoto:path.relative(process.env.UPLOADS_DIR , request.idCardPhoto).replace('/\\/g',
+                    '/'),
+                    status:request.status,
+                    createdAt:request.createdAt,
+                    paymentPhoto:path.relative(process.env.UPLOADS_DIR , request.paymentPhoto).replace('/\\/g',
+                    '/'),
+                    bank:request.bank.bankName,
+                    degreeTypes:request.degreeTypes.map(degree=>degree.degreeTypes?.title)
+                }
+            )),
+            totalData : dataLenght,
+            currentPage : pagenationOptions.page,
+            totalPages : pagenationOptions.totalPages
+        });
+
+    }catch(error){
+        return res.status(500).json({
+            success: false,
+            message : 'something went wrong !',
+            error : error.message
+        })
+    }
+}
+
+const getUserDegreeRequests = async (req,res)=>{
+    try{
+        // const dataLenght = await prisma.degreeRequest.count();
+        // const pagenationOptions = pagenation(req.query.page,req.query.limit,dataLenght,req.query.sort)
+        const user = req.userInfo;
+        console.log('user ',user)
+        const degreeRequests = await prisma.degreeRequest.findMany({where:{
+            userId:user.userId
+        }});
+
+        res.status(200).json({
+            success : true,
+            message : "تم تحميل البيانات بنجاح",
+            data : degreeRequests.map(request=>
+                ({
+                    id:request.id,
+                    status:request.status,
+                    createdAt:request.createdAt,
+                    notes:request.notes
+                }
+            ))
         });
 
     }catch(error){
@@ -107,7 +176,13 @@ const getAllRequests = async (req,res)=>{
 const getDegreeRequest = async (req,res)=>{
     try{
 
-        const degreeRequest = await prisma.degreeRequest.findUnique({where : {id:req.params.id},include : {user:{include : {student:true}},bank:true}});
+        const degreeRequest = await prisma.degreeRequest.findUnique({where : {id:req.params.id},
+            include : {user:{include : {student:true}},bank:true,degreeTypes:{
+                include:{
+                    degreeTypes:true
+                }
+            }}});
+
         if(!degreeRequest){
             return res.status(404).json({
                 success : false,
@@ -115,10 +190,36 @@ const getDegreeRequest = async (req,res)=>{
             });
         }
 
+
+        let totalPrice = 0;
+        degreeRequest.degreeTypes.map(degree=> totalPrice += parseInt(degree.degreeTypes?.price))
+
+
         res.status(200).json({
             success : true,
             message : "تم تحميل البيانات بنجاح",
-            data : degreeRequest
+            data : {
+                    id:degreeRequest.id,
+                    fullnameEnglish:degreeRequest.fullnameEnglish,
+                    fullnameArabic:degreeRequest.user.fullname,
+                    // personalPhoto:path.relative(process.env.UPLOADS_DIR , degreeRequest.personalPhoto).replace('/\\/g',
+                    // '/'),
+                    // idCardPhoto:path.relative(process.env.UPLOADS_DIR , degreeRequest.idCardPhoto).replace('/\\/g',
+                    // '/'),
+
+                    personalPhoto:degreeRequest.personalPhoto,
+                    idCardPhoto: degreeRequest.idCardPhoto,
+                    status:degreeRequest.status,
+                    createdAt:degreeRequest.createdAt,
+                    // paymentPhoto:path.relative(process.env.UPLOADS_DIR , degreeRequest.paymentPhoto).replace('/\\/g',
+                    // '/'),
+                    paymentPhoto:degreeRequest.paymentPhoto,
+                    bank:degreeRequest.bank.bankName,
+                    accountNumber:degreeRequest.bank.accountNumber,
+                    notes:degreeRequest.notes,
+                    degreeTypes:degreeRequest.degreeTypes.map(degree=>degree.degreeTypes?.title),
+                    totalPrice
+                }
         });
 
     }catch(error){
@@ -141,7 +242,8 @@ const openRequest = async (req,res)=>{
         
         res.status(200).json({
             success : true,
-            message : "تم فتح الطلب بنجاح"
+            message : "تم فتح الطلب بنجاح",
+            data:"قيد المراجعة"
         });
 
     }catch (error){
@@ -155,13 +257,23 @@ const openRequest = async (req,res)=>{
 const approveRequest = async (req,res)=>{
     try{
 
-        await findDegreeRequest(req.params.id);
+        const degreeRequest = await findDegreeRequest(req.params.id);
 
-        await prisma.degreeRequest.update({where : {id:req.params.id},data :{status : "مكتمل",notes : req.body.notes}});
+        if(degreeRequest.status !== "قيد المراجعة"){
+            res.status(200).json({
+                success : true,
+                message : "لا يمكن قبول الطلب",
+            });
+        }
+        const updatedDegreeRequest = await prisma.degreeRequest.update({where : {id:req.params.id},data :{status : "مكتمل",notes : req.body.notes}});
 
         res.status(200).json({
             success : true,
-            message : "تم قبول الطلب بنجاح"
+            message : "تم قبول الطلب بنجاح",
+            data:{
+                status:updatedDegreeRequest.status,
+                notes:updatedDegreeRequest.notes
+            }
         });
 
     }catch (error){
@@ -175,13 +287,23 @@ const approveRequest = async (req,res)=>{
 const rejectRequest =async  (req,res)=>{
     try{
 
-        await findDegreeRequest(req.params.id);
+        const degreeRequest = await findDegreeRequest(req.params.id);
 
-        await prisma.degreeRequest.update({where : {id:req.params.id},data :{status : "مرفوض",notes:req.params.notes}});
+        if(degreeRequest.status === "مرفوض" || degreeRequest.status === "مكتمل"){
+            res.status(200).json({
+                success : true,
+                message : "لا يمكن رفض هذا الطلب"
+            });
+        }
+        const updatedDegreeRequest = await prisma.degreeRequest.update({where : {id:req.params.id},data :{status : "مرفوض",notes:req.body.notes}});
 
         res.status(200).json({
             success : true,
-            message : "تم رفض الطلب"
+            message : "تم رفض الطلب",
+            data:{
+                status:updatedDegreeRequest.status,
+                notes:updatedDegreeRequest.notes
+            }
         });
 
     }catch (error){
@@ -249,4 +371,4 @@ async function findDegreeRequest (id){
 
 
 
-module.exports = {requestDegree,openRequest,approveRequest,rejectRequest,getAllRequests,degreeTypes,banks,getDegreeRequest}
+module.exports = {requestDegree,openRequest,approveRequest,rejectRequest,getAllRequests,degreeTypes,banks,getDegreeRequest,getUserDegreeRequests}

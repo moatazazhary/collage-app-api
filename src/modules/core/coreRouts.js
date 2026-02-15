@@ -9,15 +9,15 @@ const router = express.Router();
 
 // departments
 router.post('/departments',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),validate(departmentFormSchema),createDepartment);
-router.get('/departments',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),getAllDepartments);
-router.get('/departments/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),getDepartment)
+router.get('/departments',authenticateMiddleware,getAllDepartments);
+router.get('/departments/:id',authenticateMiddleware,getDepartment)
 router.put('/departments/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),validate(departmentFormSchema),updateDepartment);
 router.delete('/departments/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),deleteDepartment)
 
 
 // semesters
-router.get('/semesters',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),getAllSemesters);
-router.get('/semesters/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),getSemester)
+router.get('/semesters',authenticateMiddleware,getAllSemesters);
+router.get('/semesters/:id',authenticateMiddleware,getSemester)
 
 
 module.exports = router;

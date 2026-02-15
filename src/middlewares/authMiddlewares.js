@@ -7,7 +7,7 @@ const authenticateMiddleware = (req,res,next)=>{
         return res.status(401).json({
             success : false,
             message : "يجب تسجيل الدخول أولاً",
-            error : error.message
+            error : 'login require'
         })
     }
     try{
@@ -27,7 +27,7 @@ const authenticateMiddleware = (req,res,next)=>{
 
 
 
-const authorizationMiddleware = (role)=>(req,res,next)=>{
+const authorizationMiddleware = (...rolesList)=>(req,res,next)=>{
     
     const roles = req.userInfo.roles
     if(!roles && roles.length == 0){
@@ -38,7 +38,7 @@ const authorizationMiddleware = (role)=>(req,res,next)=>{
         })
     }
 
-    if(!roles.map(r=>r.role.name).includes(role)){
+    if(!roles.map(r=>r.role.name).some(role=> rolesList.includes(role))){
         return res.status(403).json({
             success : false,
             message : "forbidden"

@@ -191,7 +191,7 @@ router.get('/doctors',authenticateMiddleware,authorizationMiddleware(roles.ADMIN
  */
 
 
-router.get('/doctors/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN),getDoctor)
+router.get('/doctors/:id',authenticateMiddleware,authorizationMiddleware(roles.ADMIN,roles.DOCTOR),getDoctor)
 
 /**
  * @swagger
