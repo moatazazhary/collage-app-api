@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "seed" : "node src/scripts/seed.js",
     "migrate": "npx prisma migrate dev",
-    "generate": "npx prisma generate"
+    "generate": "npx prisma generate",
+    "start:prod":"npm run migrate && npm run generate && npm run seed && npm run start"
   },
   "keywords": [],
   "author": "",
