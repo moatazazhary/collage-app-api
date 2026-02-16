@@ -73,6 +73,7 @@ app.use('/api',coreRouts);
 app.use('/api',dashboardRouts);
 
 
+SetUploadsPath();
 app.listen(PORT,()=>{
 
     console.log(`
