@@ -229,7 +229,7 @@ const sendOTP = async (req,res)=>{
         if(userData.identifier){
             const student = await prisma.student.findUnique({where :{facultyNum : userData.identifier}})
             if(!student){
-                res.status(404).json({
+                return res.status(404).json({
                     success : false,
                     message : "الطالب غير موجود"
                 });
@@ -239,7 +239,7 @@ const sendOTP = async (req,res)=>{
         }else{
             user = await prisma.user.findUnique({where : {email : userData.email}})
             if(!user){
-                res.status(404).json({
+                return res.status(404).json({
                     success : false,
                     message : "الدكتور غير موجود"
                 });
@@ -257,7 +257,7 @@ const sendOTP = async (req,res)=>{
         const checkLimiation = checkLimit(user.otpExpire,user.otpLimit);
 
         if(!checkLimiation.status){
-            res.status(400).json({
+            return res.status(400).json({
                 success : false,
                 message : checkLimiation.message
             });
@@ -266,15 +266,16 @@ const sendOTP = async (req,res)=>{
         const {otp,expireDate} = generateOtp();
         const hashedOtp = await bcrypt.hash(otp,10);
 
-        await sendOTPMail(userData.email,user.fullname,5,"رمز تعيين كلمة المرور",otp);
-
         await prisma.user.update({where : {id:user.id},data :{email:userData.email,otp : hashedOtp,otpExpire:expireDate,otpLimit : user.otpLimit + 1}})
-
         res.status(200).json({
             success : true,
             message : "تم ارسال رمز ال OTP",
             email : userData.email
         })
+        sendOTPMail(userData.email,user.fullname,5,"رمز تعيين كلمة المرور",otp).catch((err)=>{
+            console.error('Error while sending email...',err);
+        });
+
 
     }catch (error){
         return res.status(500).json({
